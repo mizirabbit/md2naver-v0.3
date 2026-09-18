@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MD2Naver UI v0.3 - AI Markdown → Naver Blog</title>
+  <meta name="description" content="GPT/Gemini Markdown을 네이버 블로그용 Rich Text로 변환합니다." />
+  <link rel="stylesheet" href="./css/app.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <div class="brand-row">
+        <h1>MD2Naver</h1>
+        <span class="version-badge">UI v0.3</span>
+      </div>
+      <p>GPT / Gemini 글을 붙여넣고 Naver Blog Rich Text로 변환하세요.</p>
+    </div>
+    <div class="header-actions">
+      <button id="btnLoadSample" class="ghost">샘플</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section class="toolbar card">
+      <div class="toolbar-group grow">
+        <label>
+          스타일
+          <select id="presetSelect">
+            <option value="tech" selected>기술 블로그</option>
+            <option value="clean">깔끔한 문서</option>
+            <option value="basic">기본</option>
+            <option value="review">리뷰</option>
+          </select>
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="tocToggle" checked /> 자동 목차
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="numberHeadingToggle" /> H2 번호 자동화
+        </label>
+      </div>
+
+      <div class="toolbar-group">
+        <button id="btnDetails" class="ghost" type="button" aria-expanded="false" aria-controls="diagnosticsPanel">상세 검사</button>
+        <button id="btnCompare" class="ghost">원본 / 결과</button>
+        <button id="btnCopy" class="primary">NAVER용 복사</button>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <article class="pane card editor-pane">
+        <div class="pane-head">
+          <div>
+            <strong>1. Markdown 입력</strong>
+            <span id="sourceMeta">0자</span>
+          </div>
+          <span id="inputTypeBadge" class="input-type-badge empty">빈 입력</span>
+        </div>
+        <div class="input-actions" aria-label="Markdown 입력 방법">
+          <button id="btnPaste" class="primary paste-button" type="button">클립보드에서 붙여넣기</button>
+          <label class="file-button ghost-file secondary-action">
+            <input id="mdFileInput" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden />
+            Markdown 파일 열기
+          </label>
+          <label class="file-button ghost-file secondary-action">
+            <input id="imageFolderInput" type="file" webkitdirectory directory multiple hidden />
+            이미지 폴더 선택
+          </label>
+          <button id="btnReset" class="ghost danger secondary-action" type="button">전체 지우기</button>
+        </div>
+        <p class="input-guide">GPT/Gemini에서 복사한 내용을 아래에 <kbd>Ctrl</kbd> + <kbd>V</kbd> 하세요. Markdown과 일반 텍스트를 자동 판별합니다.</p>
+        <textarea id="markdownInput" spellcheck="false" aria-label="Markdown 또는 일반 텍스트 입력" placeholder="# 여기에 GPT/Gemini Markdown을 Ctrl+V 하세요.\n\n일반 텍스트를 붙여넣어도 문단 형식으로 바로 변환됩니다.\n.md 파일을 이 영역에 끌어다 놓을 수도 있습니다."></textarea>
+        <div id="dropOverlay" class="drop-overlay">Markdown 파일을 놓으세요</div>
+      </article>
+
+      <article class="pane card preview-pane">
+        <div class="pane-head">
+          <div>
+            <strong>2. Naver Preview</strong>
+            <span id="renderMeta">문단 0 · 코드 0 · 이미지 0</span>
+          </div>
+          <span id="copyState" class="copy-state">대기</span>
+        </div>
+        <div id="preview" class="naver-preview preset-tech"></div>
+      </article>
+    </section>
+
+    <section id="diagnosticsPanel" class="lower-grid" hidden>
+      <article id="compatibilityCard" class="card compatibility-card" hidden>
+        <div class="section-title-row">
+          <div>
+            <h2>Naver Compatibility</h2>
+            <p>SmartEditor ONE에 붙여넣기 전 문제 요소를 점검합니다.</p>
+          </div>
+          <div id="compatScore" class="score-badge">100</div>
+        </div>
+        <div id="compatList" class="compat-list"></div>
+      </article>
+
+      <article id="imageCard" class="card image-card" hidden>
+        <div class="section-title-row">
+          <div>
+            <h2>이미지 Queue</h2>
+            <p>Markdown 이미지 경로를 선택한 폴더의 파일과 연결합니다.</p>
+          </div>
+          <span id="imageCountBadge" class="pill">0개</span>
+        </div>
+        <div id="imageQueue" class="image-queue empty-state">이미지가 없습니다.</div>
+      </article>
+    </section>
+  </main>
+
+  <dialog id="compareDialog">
+    <div class="dialog-head">
+      <strong>원본 / 결과 비교</strong>
+      <button id="btnCloseCompare" class="ghost">닫기</button>
+    </div>
+    <div class="compare-grid">
+      <pre id="compareSource"></pre>
+      <div id="compareResult" class="naver-preview preset-tech"></div>
+    </div>
+  </dialog>
+
+  <template id="imageItemTemplate">
+    <div class="image-item">
+      <div class="image-index"></div>
+      <div class="image-thumb-wrap"><img class="image-thumb" alt="" /></div>
+      <div class="image-info">
+        <strong class="image-name"></strong>
+        <code class="image-path"></code>
+        <span class="image-status"></span>
+      </div>
+      <button class="image-copy ghost">이미지 복사</button>
+    </div>
+  </template>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
