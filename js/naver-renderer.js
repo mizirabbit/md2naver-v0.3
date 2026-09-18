@@ -1392,11 +1392,6 @@ function convertCodeBlocksForNaver(root)
             pre.querySelector('code');
 
 
-        /*
-         * code-lang 같은 label은 제외하고
-         * 실제 코드 내용만 사용
-         */
-
         let text =
             code
                 ? code.textContent
@@ -1408,10 +1403,18 @@ function convertCodeBlocksForNaver(root)
                 .replace(/\r\n?/g, '\n');
 
 
+        /*
+         * 마지막 불필요 개행 제거
+         */
+        text =
+            text.replace(/\n$/, '');
+
+
+        /*
+         * 코드 전체 박스
+         */
         const wrapper =
-            document.createElement(
-                'div'
-            );
+            document.createElement('div');
 
 
         wrapper.style.cssText =
@@ -1419,9 +1422,8 @@ function convertCodeBlocksForNaver(root)
             'font-size:13px;' +
             'line-height:1.65;' +
             'margin:18px 0;' +
-            'padding:14px 16px;' +
+            'padding:12px 14px;' +
             'border:1px solid #e4e8ee;' +
-            'border-radius:6px;' +
             'background-color:#f6f8fa;' +
             'color:#20252b;' +
             'text-align:left;';
@@ -1431,49 +1433,93 @@ function convertCodeBlocksForNaver(root)
             text.split('\n');
 
 
-        lines.forEach(
-            (line, index) => {
+        /*
+         * 중요:
+         *
+         * BR로 줄을 나누지 않는다.
+         *
+         * 각 줄을 독립 DIV로 만들어
+         * SmartEditor가 BR을 제거하더라도
+         * 줄 구조가 유지되도록 한다.
+         */
+        lines.forEach(line => {
 
-                const span =
-                    document.createElement(
-                        'span'
-                    );
-
-
-                /*
-                 * 일반 SPACE는 HTML에서 합쳐지므로
-                 * NBSP로 변환한다.
-                 *
-                 * TAB은 SPACE 4개로 변환.
-                 */
-
-                span.textContent =
-                    line
-                        .replace(
-                            /\t/g,
-                            '    '
-                        )
-                        .replace(
-                            / /g,
-                            '\u00A0'
-                        );
+            const row =
+                document.createElement('div');
 
 
-                wrapper.appendChild(
-                    span
+            row.style.cssText =
+                'display:block;' +
+                'margin:0;' +
+                'padding:0;' +
+                'min-height:1.65em;' +
+                'line-height:1.65;' +
+                'font-family:Consolas,Menlo,Monaco,monospace;' +
+                'font-size:13px;';
+
+
+            /*
+             * TAB → space 4개
+             */
+            let value =
+                line.replace(
+                    /\t/g,
+                    '    '
                 );
 
 
-                if(index < lines.length - 1)
-                {
-                    wrapper.appendChild(
-                        document.createElement(
-                            'br'
+            /*
+             * 앞쪽 indentation 보존
+             *
+             * 모든 space를 NBSP로 바꾸면
+             * 긴 코드가 줄바꿈되지 않는 문제가 있으므로
+             * leading space만 NBSP 처리
+             */
+            const indent =
+                value.match(/^ */)?.[0].length || 0;
+
+
+            const body =
+                value.slice(indent);
+
+
+            const indentation =
+                '\u00A0'.repeat(indent);
+
+
+            /*
+             * 코드 중간에 연속된 공백이 있다면 보존
+             */
+            const preservedBody =
+                body.replace(
+                    / {2,}/g,
+                    spaces =>
+                        '\u00A0'.repeat(
+                            spaces.length
                         )
-                    );
-                }
+                );
+
+
+            if(value.length === 0)
+            {
+                /*
+                 * 빈 줄도 SmartEditor가 삭제하지 않도록
+                 */
+                row.textContent =
+                    '\u00A0';
             }
-        );
+            else
+            {
+                row.textContent =
+                    indentation +
+                    preservedBody;
+            }
+
+
+            wrapper.appendChild(
+                row
+            );
+        });
 
 
         pre.replaceWith(
