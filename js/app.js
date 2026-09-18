@@ -247,7 +247,10 @@ async function copyForNaver() {
   if (!lastRender) await render();
   try {
     const html = getClipboardHtml(preview, presetSelect.value);
-    const plain = preview.innerText;
+    const plainClone = preview.cloneNode(true);
+    plainClone.querySelectorAll('.code-lang').forEach(el => el.remove());
+    const plain = plainClone.innerText;
+
     const result = await copyRichText(html, plain);
     setCopyState(result.method === 'clipboard-api' ? '복사 완료' : '복사 완료*', true);
   } catch (err) {
