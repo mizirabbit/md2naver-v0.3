@@ -282,6 +282,11 @@ function loadImage(url) {
 
 export function getClipboardHtml(previewEl, preset = 'tech') {
   const clone = previewEl.cloneNode(true);
+
+  // 코드 블록 언어 표시(CPP, TEXT, BASH 등)는
+  // Preview 전용이므로 Naver 복사 시 제거
+  clone.querySelectorAll('.code-lang').forEach(el => el.remove());
+
   clone.querySelectorAll('.toc-box a').forEach(a => {
     const span = document.createElement('span');
     span.textContent = a.textContent;
@@ -291,15 +296,22 @@ export function getClipboardHtml(previewEl, preset = 'tech') {
   clone.querySelectorAll('figure.md-image').forEach(figure => {
     const marker = figure.querySelector('.image-marker');
     const p = document.createElement('p');
-    p.style.cssText = 'margin:20px 0;padding:14px;text-align:center;border:1px dashed #aeb8c5;background:#fafbfc;color:#596575;';
-    p.textContent = marker?.innerText.replace(/\s+/g, ' ').trim() || '[IMAGE]';
+    p.style.cssText =
+      'margin:20px 0;padding:14px;text-align:center;' +
+      'border:1px dashed #aeb8c5;background:#fafbfc;color:#596575;';
+    p.textContent =
+      marker?.innerText.replace(/\s+/g, ' ').trim() || '[IMAGE]';
     figure.replaceWith(p);
   });
 
   clone.querySelectorAll('.mermaid-wrap').forEach((wrap, index) => {
     const p = document.createElement('p');
-    p.style.cssText = 'margin:20px 0;padding:14px;text-align:center;border:1px dashed #aeb8c5;background:#fafbfc;color:#596575;';
-    p.textContent = `[DIAGRAM ${String(index + 1).padStart(2, '0')}] Mermaid PNG를 이미지 Queue에서 복사해 붙여넣으세요.`;
+    p.style.cssText =
+      'margin:20px 0;padding:14px;text-align:center;' +
+      'border:1px dashed #aeb8c5;background:#fafbfc;color:#596575;';
+    p.textContent =
+      `[DIAGRAM ${String(index + 1).padStart(2, '0')}] ` +
+      'Mermaid PNG를 이미지 Queue에서 복사해 붙여넣으세요.';
     wrap.replaceWith(p);
   });
 
